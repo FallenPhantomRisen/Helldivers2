@@ -22,12 +22,12 @@
     box.style.border = '1px solid green';
     box.style.zIndex = '1000';
     box.innerHTML = 'No Current Data Found';
+    box.style.display = 'none';
     document.body.appendChild(box);
 
     function extractData() {
         let nameHtml = '';
         let dataHtml = '';
-
         const dividerElements = document.querySelectorAll('.m-3eebeb36.mantine-Divider-root[data-orientation="vertical"][role="separator"]');
         const uniqueNames = new Set();
         dividerElements.forEach(dividerElement => {
@@ -44,7 +44,6 @@
             }
         });
         if (nameHtml) nameHtml += '<br>';
-
         const parentElements = document.querySelectorAll('.m-4081bf90.mantine-Group-root');
         parentElements.forEach(parentElement => {
             const textElements = parentElement.querySelectorAll('.mantine-Text-root');
@@ -58,7 +57,6 @@
             });
             if (dataHtml) dataHtml += '<br>';
         });
-
         const h5Elements = document.querySelectorAll('.m-8a5d1357.mantine-Title-root[data-order="5"]');
         h5Elements.forEach(h5 => {
             const h5Text = h5.textContent.trim();
@@ -69,7 +67,6 @@
             }
         });
         if (nameHtml) nameHtml += '<br>';
-
         const gridInnerDivs = document.querySelectorAll('.m-dee7bd2f.mantine-Grid-inner');
         gridInnerDivs.forEach(gridInnerDiv => {
             const labels = gridInnerDiv.querySelectorAll('p');
@@ -86,69 +83,87 @@
             }
         });
         if (dataHtml) dataHtml += '<br>';
-
         const dataContent = (nameHtml || dataHtml) ? `${nameHtml} ${dataHtml}` : 'No Current Data Found';
         return dataContent;
     }
 
-    function sendDataToWebhook(data) {
-    const webhookUrl = 'https://discord.com/api/webhooks/1226721773370867745/63S7NTREwblLcFcadpDOyFEt3od5PSUBC8TBDGEe4fIw2XVOas-TBNenLabvMXrx2Cza';
-
-    fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: data }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Disregard Message');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Data sent to webhook:', data);
-        alert('Data sent to webhook!');
-    })
-    .catch(error => {
-        console.error('Error sending data to webhook:', error);
-    });
-}
-
-function copyToClipboard(text) {
-    const tempElement = document.createElement('div');
-    tempElement.innerHTML = text;
-    const extractedText = Array.from(tempElement.childNodes)
-        .map(node => node.textContent.trim().replace(/(:)\s*$/gm, '$1'))
-        .filter(content => content !== '')
-        .map(content => content.replace(/\s*:\s*/g, ':'))
-        .join('\n');
-
-    const formattedText = '```\n' + extractedText + '\n```';
-
-    sendDataToWebhook(formattedText);
-}
-
-
-
-
-function updateDisplayBox() {
-    const dataToCopy = extractData();
-    if (dataToCopy !== 'No Current Data Found') {
-        const copyButton = document.createElement('button');
-        copyButton.id = 'copyButton';
-        copyButton.textContent = 'Send to Webhook';
-        copyButton.style.marginTop = '10px';
-        copyButton.addEventListener('click', function() {
-            copyToClipboard(dataToCopy);
+    function sendDataToWebhook(embedMessage, color) {
+        const webhookUrl = 'Your Webhook Link Here'; // Simply fill your webhook in here
+        const payload = {
+            embeds: [{
+                description: embedMessage,
+                color: color
+            }]
+        };
+        fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to send data to webhook');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data sent to webhook:', data);
+            alert('Data sent to webhook!');
+        })
+        .catch(error => {
+            console.error('Error sending data to webhook:', error);
         });
-        box.innerHTML = dataToCopy;
-        box.appendChild(copyButton);
-    } else {
-        box.innerHTML = dataToCopy;
     }
-}
+
+    function copyToClipboard(text, color) {
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = text;
+        let extractedText = Array.from(tempElement.childNodes)
+            .map(node => node.textContent.trim())
+            .filter(content => content !== '')
+            .map(content => content.replace(/(:)/g, ' : '))
+            .join('\n');
+        let lines = extractedText.split('\n');
+        if (lines.length >= 2) {
+            lines[0] = `**${lines[0]}**`;
+            lines[1] = `**${lines[1]}**`;
+        }
+        if (lines.length >= 3) {
+            lines.splice(2, 0, '');
+        }
+        if (lines.length >= 5) {
+            lines.splice(5, 0, '');
+        }
+        if (lines.length >= 6) {
+            lines[3] = `**${lines[3]}**`;
+            lines[4] = `**${lines[4]}**`;
+        }
+        extractedText = lines.join('\n');
+        const formattedText = extractedText;
+        sendDataToWebhook(formattedText, color);
+    }
+
+    function updateDisplayBox() {
+        const dataToCopy = extractData();
+        const color = 0x00FF00;
+        if (dataToCopy !== 'No Current Data Found') {
+            const copyButton = document.createElement('button');
+            copyButton.id = 'copyButton';
+            copyButton.textContent = 'Send to Webhook';
+            copyButton.style.marginTop = '10px';
+            copyButton.addEventListener('click', function() {
+                copyToClipboard(dataToCopy, color);
+            });
+            box.innerHTML = dataToCopy;
+            box.appendChild(copyButton);
+            box.style.display = 'block';
+        } else {
+            box.innerHTML = dataToCopy;
+            box.style.display = 'none';
+        }
+    }
 
     setInterval(updateDisplayBox, 500);
 })();
