@@ -91,40 +91,64 @@
         return dataContent;
     }
 
-    function copyToClipboard(text) {
+    function sendDataToWebhook(data) {
+    const webhookUrl = 'https://discord.com/api/webhooks/1226721773370867745/63S7NTREwblLcFcadpDOyFEt3od5PSUBC8TBDGEe4fIw2XVOas-TBNenLabvMXrx2Cza';
+
+    fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: data }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Disregard Message');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Data sent to webhook:', data);
+        alert('Data sent to webhook!');
+    })
+    .catch(error => {
+        console.error('Error sending data to webhook:', error);
+    });
+}
+
+function copyToClipboard(text) {
     const tempElement = document.createElement('div');
     tempElement.innerHTML = text;
     const extractedText = Array.from(tempElement.childNodes)
-        .map(node => node.textContent.trim())
+        .map(node => node.textContent.trim().replace(/(:)\s*$/gm, '$1'))
         .filter(content => content !== '')
-        .join(' : \n');
-    navigator.clipboard.writeText(extractedText)
-        .then(() => {
-            alert('Data copied to clipboard!');
-        })
-        .catch(err => {
-            console.error('Failed to copy: ', err);
-        });
+        .map(content => content.replace(/\s*:\s*/g, ':'))
+        .join('\n');
+
+    const formattedText = '```\n' + extractedText + '\n```';
+
+    sendDataToWebhook(formattedText);
 }
 
 
 
-    function updateDisplayBox() {
-        const dataToCopy = extractData();
-        if (dataToCopy !== 'No Current Data Found') {
-            const copyButton = document.createElement('button');
-            copyButton.id = 'copyButton';
-            copyButton.textContent = 'Copy';
-            copyButton.style.marginTop = '10px';
-            copyButton.addEventListener('click', function() {
-                copyToClipboard(dataToCopy);
-            });
-            box.innerHTML = dataToCopy;
-            box.appendChild(copyButton);
-        } else {
-            box.innerHTML = dataToCopy;
-        }
+
+function updateDisplayBox() {
+    const dataToCopy = extractData();
+    if (dataToCopy !== 'No Current Data Found') {
+        const copyButton = document.createElement('button');
+        copyButton.id = 'copyButton';
+        copyButton.textContent = 'Send to Webhook';
+        copyButton.style.marginTop = '10px';
+        copyButton.addEventListener('click', function() {
+            copyToClipboard(dataToCopy);
+        });
+        box.innerHTML = dataToCopy;
+        box.appendChild(copyButton);
+    } else {
+        box.innerHTML = dataToCopy;
     }
+}
 
     setInterval(updateDisplayBox, 500);
 })();
