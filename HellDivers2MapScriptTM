@@ -92,14 +92,22 @@
     }
 
     function copyToClipboard(text) {
-        navigator.clipboard.writeText(text)
-            .then(() => {
-                alert('Data copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-    }
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = text;
+    const extractedText = Array.from(tempElement.childNodes)
+        .map(node => node.textContent.trim())
+        .filter(content => content !== '')
+        .join(' : \n');
+    navigator.clipboard.writeText(extractedText)
+        .then(() => {
+            alert('Data copied to clipboard!');
+        })
+        .catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+}
+
+
 
     function updateDisplayBox() {
         const dataToCopy = extractData();
