@@ -1,0 +1,122 @@
+// ==UserScript==
+// @name         Color-Coded Data Extraction and Display with Exclusions
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  Extract data with specific color coding and exclusions
+// @author       Errornulltag
+// @match        https://hd2galaxy.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    let box = document.createElement('div');
+    box.id = 'dataDisplayBox';
+    box.style.position = 'fixed';
+    box.style.top = '10px';
+    box.style.left = '50%';
+    box.style.transform = 'translateX(-50%)';
+    box.style.backgroundColor = 'black';
+    box.style.color = 'green';
+    box.style.padding = '10px';
+    box.style.border = '1px solid green';
+    box.style.zIndex = '1000';
+    box.innerHTML = 'No Current Data Found';
+    document.body.appendChild(box);
+
+    function extractData() {
+        let nameHtml = '';
+        let dataHtml = '';
+
+        const dividerElements = document.querySelectorAll('.m-3eebeb36.mantine-Divider-root[data-orientation="vertical"][role="separator"]');
+        const uniqueNames = new Set();
+        dividerElements.forEach(dividerElement => {
+            let siblingElement = dividerElement.nextElementSibling;
+            while (siblingElement) {
+                if (siblingElement.classList.contains('mantine-Text-root')) {
+                    const textContent = siblingElement.textContent.trim();
+                    if (textContent && !uniqueNames.has(textContent)) {
+                        uniqueNames.add(textContent);
+                        nameHtml += `<p class="${siblingElement.className}" style="${siblingElement.style.cssText}">${textContent}</p>`;
+                    }
+                }
+                siblingElement = siblingElement.nextElementSibling;
+            }
+        });
+        if (nameHtml) nameHtml += '<br>';
+
+        const parentElements = document.querySelectorAll('.m-4081bf90.mantine-Group-root');
+        parentElements.forEach(parentElement => {
+            const textElements = parentElement.querySelectorAll('.mantine-Text-root');
+            textElements.forEach(textElement => {
+                if (!textElement.closest('p.mantine-Text-root')) {
+                    const textContent = textElement.textContent.trim();
+                    if (textContent) {
+                        dataHtml += `<div style="color: rgb(255, 196, 0);">${textContent}</div>`;
+                    }
+                }
+            });
+            if (dataHtml) dataHtml += '<br>';
+        });
+
+        const h5Elements = document.querySelectorAll('.m-8a5d1357.mantine-Title-root[data-order="5"]');
+        h5Elements.forEach(h5 => {
+            const h5Text = h5.textContent.trim();
+            if (h5Text !== "ACTIVE PLANETS" && h5Text !== "MAJOR ORDER") {
+                if (h5Text) {
+                    nameHtml += `<div style="color: yellow;">${h5Text}</div>`;
+                }
+            }
+        });
+        if (nameHtml) nameHtml += '<br>';
+
+        const gridInnerDivs = document.querySelectorAll('.m-dee7bd2f.mantine-Grid-inner');
+        gridInnerDivs.forEach(gridInnerDiv => {
+            const labels = gridInnerDiv.querySelectorAll('p');
+            if (labels.length === 2) {
+                const name = labels[0].textContent.trim();
+                const value = labels[1].textContent.trim();
+                let colorStyle = '';
+                if (name === 'Illuminate:' && parseInt(value.replace(/,/g, '')) > 0) {
+                    colorStyle = ' style="color: red;"';
+                }
+                if (name && value) {
+                    dataHtml += `<div${colorStyle}>${name} ${value}</div>`;
+                }
+            }
+        });
+        if (dataHtml) dataHtml += '<br>';
+
+        const dataContent = (nameHtml || dataHtml) ? `${nameHtml} ${dataHtml}` : 'No Current Data Found';
+        return dataContent;
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                alert('Data copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+    }
+
+    function updateDisplayBox() {
+        const dataToCopy = extractData();
+        if (dataToCopy !== 'No Current Data Found') {
+            const copyButton = document.createElement('button');
+            copyButton.id = 'copyButton';
+            copyButton.textContent = 'Copy';
+            copyButton.style.marginTop = '10px';
+            copyButton.addEventListener('click', function() {
+                copyToClipboard(dataToCopy);
+            });
+            box.innerHTML = dataToCopy;
+            box.appendChild(copyButton);
+        } else {
+            box.innerHTML = dataToCopy;
+        }
+    }
+
+    setInterval(updateDisplayBox, 500);
+})();
